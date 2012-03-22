@@ -9,11 +9,15 @@ App::uses('HttpSocket', 'Network/Http');
 class DATABASE_CONFIG {
 
   public $default = array(
-    'host' => 'localhost',  // optional
-    'port' => 5984,         // optional
-    'login' => 'root',
-    'password' => 'root',
-    'database' => 'cake',
+    'host'      => 'localhost', // optional
+    'port'      => 5984,        // optional
+    'login'     => 'root',
+    'password'  => 'root',
+
+    'models'    => 'type',      // (optional)
+    'database'  => 'cake',      // can be overridden in Model->database)
+
+    'models'    => false        // if models are distinguished by database instead
   );
 }
 
@@ -26,17 +30,19 @@ class CouchDBSource extends DataSource {
   * and http://api.cakephp.org/class/data-source#method-DataSourcesetConfig
   **/
   protected $_baseconfig = array(
-    'authType' => 'basic',
-    'couchAnswer' => 'couchdb',
-    'request' => array(
+    'request'   => array(
       'uri' => array(
         'host' => 'localhost',
         'port' => 5984
       ),
-      'header' => array(
+      'header'  => array(
         'Content-Type' => 'application/json'
       )
-    )
+    ),
+
+    'authType'  => 'basic',
+    'models'    => 'type',
+    'database'  => ''
   );
 
   public $logQueries = true;
@@ -99,7 +105,10 @@ class CouchDBSource extends DataSource {
             break;
          }
         }
-        $this->connected = strpos($this->Socket->get('/'), $this->config['couchAnswer']) !== false;
+
+        $this->connected = (json_decode($this->Socket->get('/'.$this->config['database'])) !== null) &&
+          (json_last_error() == JSON_ERROR_NONE);
+
       } catch (SocketException $e) {
         throw new MissingConnectionException(array('class' => $e->getMessage()));
       }
@@ -145,34 +154,76 @@ class CouchDBSource extends DataSource {
   }
 
   public function listSources() {
-    $databases = $this->__decode($this->Socket->get($this->__uri('_all_dbs')), true);
-    return $databases;
+    if ($this->cacheSources === false) {
+      return null;
+    } elseif ($this->_sources !== null) {
+      return $this->_sources;
+    }
+
+    //needs to be changed to $this->config['models']
+    if ($this->config['models'] === false) {
+      $this->_sources = $this->execute('/_all_dbs');
+    } else {
+      $this->_sources = $this->execute(
+        '/'.$this->config['database'].'/_temp_view?group=true',
+        'post',
+        array(
+          "language":"javascript",
+          "map":"function(doc) { if (doc.type) {emit(doc.type,1);}}",
+          "reduce":"function(keys, values) { return sum(values);}"
+        )
+      );
+    }
+
+    return $this->_sources;
   }
 
-  public function execute() {
+  public function execute($url, $method = 'get', $data = '') {
+    $result = false;
     $t = microtime(true);
 
+    $data = json_encode($data);
+    switch ($method) {
+      case 'post':
+        $result = $this->Socket->post($url, $data);
+        break;
 
+      case 'put':
+        $result = $this->Socket->put($url, $data);
+        break;
 
+      case 'delete':
+        $result = $this->Socket->delete($url, $data);
+        break;
 
-    $this->_result = $this->_execute($sql, $params);
+      case 'get':
+      default:
+        $result = $this->Socket->get($url, $data);
+        break;
+    }
+    $t = round((microtime(true) - $t) * 1000, 0);
 
+    if ($result !== false) {
+      $result = json_decode($result, true);
 
-
-
+      /*if (json_last_error() == JSON_ERROR_NONE) {
+        $result = null;
+      }*/
+    }
 
     if ($this->logQueries && (count($this->_queriesLog) <= $this->_queriesLogMax) {
-      $t = round((microtime(true) - $t) * 1000, 0);
       $this->_queriesCnt++;
       $this->_queriesTime += $t;
       $this->_queriesLog[] = array(
-        'query'   => $query,
-        'params'  => $params,
-        'affected'  => $this->affected,
-        'numRows' => $this->numRows,
-        'took'    => $this->took
+        'query'   => $url,
+        'params'  => $data,
+        'affected'=> 0,
+        'numRows' => 0,
+        'took'    => $t
       );
     }
+
+    return $result;
   }
 
 
