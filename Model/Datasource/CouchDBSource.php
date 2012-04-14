@@ -183,9 +183,9 @@ class CouchDBSource extends DataSource {
       '/'.$this->config['database'].'/_temp_view?group=true',
       'post',
       array(
-        "language":"javascript",
-        "map":"function(doc) { if (doc.". $this->config['models'] .") {emit(doc.". $this->config['models'] .",1);}}",
-        "reduce":"function(keys, values) { return sum(values);}"
+        'language'  => 'javascript',
+        'map'       => 'function(doc) { if (doc.'. $this->config['models'] .') {emit(doc.'. $this->config['models'] .',1);}}',
+        'reduce'    => 'function(keys, values) { return sum(values);}'
       )
     );
 
