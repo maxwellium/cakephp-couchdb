@@ -234,7 +234,7 @@ class CouchDBSource extends DataSource {
       throw new CakeException(json_last_error());
     }
 
-    if ($this->logQueries && (count($this->_queriesLog) <= $this->_queriesLogMax) {
+    if ($this->logQueries && (count($this->_queriesLog) <= $this->_queriesLogMax)) {
       $this->_queriesCnt++;
       $this->_queriesTime += $t;
       $this->_queriesLog[] = array(
