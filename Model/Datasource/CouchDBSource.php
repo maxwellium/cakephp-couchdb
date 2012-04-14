@@ -8,7 +8,7 @@ App::uses('HttpSocket', 'Network/Http');
 /*
 class DATABASE_CONFIG {
 
-  // remember to update $useDbconfig in Model or CouchDBAppModel.php if you change this name!
+  // remember to update $useDbConfig in Model or CouchDBAppModel.php if you change this name!
   public $couchDB = array(
     'datasource' => 'CouchDB.CouchDBSource',
 
@@ -286,7 +286,7 @@ class CouchDBSource extends DataSource {
 
       $id = String::uuid();
     }
-    $data[$this->config['models']] = $model->tablename;
+    $data[$this->config['models']] = strtolower($model->name);
 
     $url = sprintf(
       '/%s/%s',

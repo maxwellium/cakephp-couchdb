@@ -1,6 +1,6 @@
 <?php
 
 class CouchDBAppModel extends AppModel {
-  public $useDbconfig = 'couchDB';
+  public $useDbConfig = 'couchDB';
   public $database = null;
 }
