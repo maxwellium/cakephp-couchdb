@@ -19,3 +19,15 @@ class DATABASE_CONFIG {
 $couchdb['models'] hereby refers to the document field, that most nosql-developers use to distinguish between models.
 
 check out http://guide.couchdb.org/draft/validation.html#type on this matter
+
+
+
+in your application you can then create models like this:
+
+<?php
+App::uses('CouchDBAppModel', 'CouchDB.Model');
+
+class User extends CouchDBAppModel {
+
+}
+?>

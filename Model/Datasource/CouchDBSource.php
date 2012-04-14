@@ -51,7 +51,6 @@ class CouchDBSource extends DataSource {
   protected $_queriesLog = array();
   protected $_queriesCnt = 0;
   protected $_queriesTime = null;
-  protected $_queriesLog = array();
   protected $_queriesLogMax = 200;
 
   /**
