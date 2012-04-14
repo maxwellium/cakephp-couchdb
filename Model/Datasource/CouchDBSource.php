@@ -8,16 +8,17 @@ App::uses('HttpSocket', 'Network/Http');
 /*
 class DATABASE_CONFIG {
 
-  public $default = array(
+  // remember to update $useDbconfig in Model or CouchDBAppModel.php if you change this name!
+  public $couchDB = array(
+    'datasource' => 'CouchDB.CouchDBSource',
+
     'host'      => 'localhost', // optional
     'port'      => 5984,        // optional
     'login'     => 'root',
     'password'  => 'root',
 
     'models'    => 'type',      // (optional)
-    'database'  => 'cake',      // can be overridden in Model->database)
-
-    'models'    => false        // if models are distinguished by database instead
+    'database'  => 'cake',      // can be overridden in Model->database
   );
 }
 
@@ -83,37 +84,60 @@ class CouchDBSource extends DataSource {
     if ($this->connected !== true) {
       try {
         $this->Socket = new HttpSocket($this->config);
+
         switch ($this->config['authType']) {
           case 'cookie':
-            $this->Socket->post(
-              '/_session',
-              array(
-                'name' => $this->config['login'],
-                'password' => $this->config['password']
-              ),
-              array(
-                'header' => array(
-                  'Content-Type' => 'application/x-www-form-urlencoded'
-                )
-              )
-            );
+            $this->connected = $this->cookieAuth();
+            break;
+          case 'oauth':
+            $this->connected = false; //to be implemented later
             break;
           case 'basic':
           default:
-            $this->Socket->config['request']['uri']['user'] = $this->config['user'];
-            $this->Socket->config['request']['uri']['pass'] = $this->config['password'];
+            $this->connected = $this->basicAuth();
             break;
-         }
         }
 
-        $this->connected = (json_decode($this->Socket->get('/'.$this->config['database'])) !== null) &&
-          (json_last_error() == JSON_ERROR_NONE);
-
+        // ? throw error if still not connected
       } catch (SocketException $e) {
         throw new MissingConnectionException(array('class' => $e->getMessage()));
       }
     }
     return $this->connected;
+  }
+
+  private function cookieAuth() {
+    // ? check for /_session first.. http://wiki.apache.org/couchdb/Session_API
+    $result = json_decode(
+      $this->Socket->post(
+        '/_session',
+        array(
+          'name' => $this->config['login'],
+          'password' => $this->config['password']
+        ),
+        array(
+          'header' => array(
+            'Content-Type' => 'application/x-www-form-urlencoded'
+          )
+        )
+      ),
+      true
+    );
+
+    return (json_last_error() != JSON_ERROR_NONE) && isset($result['ok']) && ($result['ok'] == true);
+  }
+
+  private function basicAuth() {
+    $this->Socket->config['request']['uri']['user'] = $this->config['user'];
+    $this->Socket->config['request']['uri']['pass'] = $this->config['password'];
+
+    $result = json_decode($this->Socket->get('/',), true);
+    /* http://wiki.apache.org/couchdb/HttpGetRoot
+     * gotta be careful, since this can be set to ""
+     * don't do that ;)
+     */
+
+    return (json_last_error() != JSON_ERROR_NONE) && ($result !== null);
   }
 
   public function reconnect($config = null) {
@@ -132,15 +156,11 @@ class CouchDBSource extends DataSource {
     return !$this->connected;
   }
 
-  /**
-  * (called by DataSource destructor)
-  **/
   public function close() {
     $this->disconnect();
   }
 
 
-//////////////////////////////////////////////////
 
   public function describe(&$model) {
     return $model->_schema;
@@ -160,29 +180,35 @@ class CouchDBSource extends DataSource {
       return $this->_sources;
     }
 
-    //needs to be changed to $this->config['models']
-    if ($this->config['models'] === false) {
-      $this->_sources = $this->execute('/_all_dbs');
-    } else {
-      $this->_sources = $this->execute(
-        '/'.$this->config['database'].'/_temp_view?group=true',
-        'post',
-        array(
-          "language":"javascript",
-          "map":"function(doc) { if (doc.type) {emit(doc.type,1);}}",
-          "reduce":"function(keys, values) { return sum(values);}"
-        )
-      );
-    }
+    $this->_sources = $this->execute(
+      '/'.$this->config['database'].'/_temp_view?group=true',
+      'post',
+      array(
+        "language":"javascript",
+        "map":"function(doc) { if (doc.". $this->config['models'] .") {emit(doc.". $this->config['models'] .",1);}}",
+        "reduce":"function(keys, values) { return sum(values);}"
+      )
+    );
+
+    // TODO:
+    /* I consider the above solution bad practice.. I think about implementing this view in futon
+     * and adding path to DATABASE_CONFIG
+     * maybe just optional
+     *
+     * currently requires admin privileges
+     * see http://wiki.apache.org/couchdb/Complete_HTTP_API_Reference
+     *  Database methods
+     *    POST /db/_temp_view
+     */
 
     return $this->_sources;
   }
 
   public function execute($url, $method = 'get', $data = '') {
-    $result = false;
     $t = microtime(true);
 
     $data = json_encode($data);
+
     switch ($method) {
       case 'post':
         $result = $this->Socket->post($url, $data);
@@ -201,14 +227,12 @@ class CouchDBSource extends DataSource {
         $result = $this->Socket->get($url, $data);
         break;
     }
+
     $t = round((microtime(true) - $t) * 1000, 0);
 
-    if ($result !== false) {
-      $result = json_decode($result, true);
-
-      /*if (json_last_error() == JSON_ERROR_NONE) {
-        $result = null;
-      }*/
+    $result = json_decode($result, true);
+    if (is_null($result)) {
+      throw new CakeException(json_last_error());
     }
 
     if ($this->logQueries && (count($this->_queriesLog) <= $this->_queriesLogMax) {
@@ -240,12 +264,69 @@ class CouchDBSource extends DataSource {
   }
 
 
-  public function create($model, $fields = array(), $values = array()) {
+  public function create(Model &$model, $fields = null, $values = null) {
+  /*
+   * http://wiki.apache.org/couchdb/HTTP_Document_API#POST
+   * http://wiki.apache.org/couchdb/HTTP_Document_API#PUT
+   *
+   * see link on POST to understand why I generate uuid in here
+   */
+
+    $data = $model->data;
+
+    if ($fields !== null && $values !== null) {
+      $data = array_combine($fields, $values);
+    }
+
+    if (in_array($model->primaryKey, $data)) {
+
+      $id = $data[$model->primaryKey];
+      unset($data[$model->primaryKey]);
+    } else {
+
+      $id = String::uuid();
+    }
+    $data[$this->config['models']] = $model->tablename;
+
+    $url = sprintf(
+      '/%s/%s',
+      is_null($model->database) ? $this->config['database'] : $model->database,
+      $id
+    );
+
+    $result = $this->execute($url, 'put', $data);
+
+    if ($result['ok'] == true) {
+
+      unset($data[$this->config['models']])
+      $model->data = $data;
+
+      $model->id = $result['id'];
+      $model->data['id'] = $result['id'];
+
+      $model->rev = $result['rev'];
+      return true;
+    }
+
+    $model->onError();
+    return false;
   }
-  public function read($model, $queryData = array()) {
+
+  public function calculate($model, $func, $params = array()) {
+    return 'COUNT';
   }
-  public function update($model, $fields = array(), $values = array()) {
+
+
+
+//////////////////////////////////////////////////
+  public function read(Model &$model, $queryData = array()) {
+    return false;
   }
-  public function delete($model, $id = null) {
+  public function update(Model &$model, $fields = null, $values = null) {
+    return false;
   }
+  public function delete(Model &$model, $id = null) {
+    return false;
+  }
+
 }

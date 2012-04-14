@@ -1,4 +1,4 @@
-This plugin aims at cakephp-developers who wish to easily embed CouchDB into their projects. 
+This plugin aims at cakephp-developers who wish to easily embed CouchDB into their projects.
 Since it's not yet fully done, feel free to contribute or comment. Basic CakePhp model functions that make developing with cake so comfortable will be implemented in this datasource.
 
 The db-config should look something like this:
@@ -18,4 +18,4 @@ class DATABASE_CONFIG {
 
 $couchdb['models'] hereby refers to the document field, that most nosql-developers use to distinguish between models.
 
-check out http://guide.couchdb.org/draft/validation.html#type on this
+check out http://guide.couchdb.org/draft/validation.html#type on this matter
