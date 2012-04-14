@@ -297,7 +297,7 @@ class CouchDBSource extends DataSource {
 
     if ($result['ok'] == true) {
 
-      unset($data[$this->config['models']])
+      unset($data[$this->config['models']]);
       $model->data = $data;
 
       $model->id = $result['id'];
