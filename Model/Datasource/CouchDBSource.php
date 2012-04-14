@@ -130,7 +130,7 @@ class CouchDBSource extends DataSource {
     $this->Socket->config['request']['uri']['user'] = $this->config['user'];
     $this->Socket->config['request']['uri']['pass'] = $this->config['password'];
 
-    $result = json_decode($this->Socket->get('/',), true);
+    $result = json_decode($this->Socket->get('/'), true);
     /* http://wiki.apache.org/couchdb/HttpGetRoot
      * gotta be careful, since this can be set to ""
      * don't do that ;)
