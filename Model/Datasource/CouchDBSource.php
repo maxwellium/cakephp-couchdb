@@ -73,7 +73,7 @@ class CouchDBSource extends DataSource {
         unset($config[$key]);
       }
     }
-    $this->config = array_replace_recursive($_baseconfig, $this->config, $config,$translatedConfig);
+    $this->config = array_replace_recursive($this->_baseconfig, $this->config, $config,$translatedConfig);
   }
 
   /**
