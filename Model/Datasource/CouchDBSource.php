@@ -167,9 +167,10 @@ class CouchDBSource extends DataSource {
     $schema = array();
 
     $schema[$model->primaryKey] = array(
-      'type' => 'string',
-      'null' => false,
-      'key' => 'primary',
+      'type'    => 'string',
+      'length'  => 36,
+      'null'    => false,
+      'key'     => 'primary',
     );
 
     return $schema;
@@ -330,12 +331,15 @@ class CouchDBSource extends DataSource {
 
 //////////////////////////////////////////////////
   public function read(Model &$model, $queryData = array()) {
+    debug('read');
     return array();
   }
   public function update(Model &$model, $fields = null, $values = null) {
+    debug('update');
     return array();
   }
   public function delete(Model &$model, $id = null) {
+    debug('delete');
     return false;
   }
 
