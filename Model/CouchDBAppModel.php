@@ -6,4 +6,51 @@ class CouchDBAppModel extends AppModel {
 
   public $primaryKey = '_id';
   public $revisionKey = '_rev';
+
+  /*
+   * had to overwrite these two functions since we will not predefine our schema :)
+   * nonsqlfreedom
+   */
+  public function schema($field = false) {
+    if (isset($this->data[$this->alias]) && is_array($this->data[$this->alias])) {
+      $this->_schema = array_flip(array_keys($this->data[$this->alias]));
+    } else {
+      $this->_schema = array();
+    }
+
+    if (is_string($field)) {
+      if (isset($this->_schema[$field])) {
+        return $this->_schema[$field];
+      } else {
+        return null;
+      }
+    }
+    return $this->_schema;
+  }
+  public function hasField($name, $checkVirtual = false) {
+    if (is_array($name)) {
+      foreach ($name as $n) {
+        if ($this->hasField($n, $checkVirtual)) {
+          return $n;
+        }
+      }
+      return false;
+    }
+    if ($checkVirtual && !empty($this->virtualFields)) {
+      if ($this->isVirtualField($name)) {
+        return true;
+      }
+    }
+
+    // this is the change, rebuilding schema from data everytime:
+
+    //if (empty($this->_schema)) {
+    $this->schema();
+    //}
+
+    if ($this->_schema != null) {
+      return isset($this->_schema[$name]);
+    }
+    return false;
+  }
 }
