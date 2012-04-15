@@ -46,6 +46,7 @@ class CouchDBSource extends DataSource {
     'database'  => ''
   );
 
+  public $cacheSources = false;
   public $logQueries = true;
 
   protected $_queriesLog = array();
@@ -162,7 +163,7 @@ class CouchDBSource extends DataSource {
 
 
   public function describe(&$model) {
-    return $model->_schema;
+    return null;
   }
 
   public function sources($reset = false) {
