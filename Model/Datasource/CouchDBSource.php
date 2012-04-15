@@ -127,11 +127,11 @@ class CouchDBSource extends DataSource {
   }
 
   private function basicAuth() {
-    debug('auth');
     $this->Socket->config['request']['uri']['user'] = $this->config['login'];
     $this->Socket->config['request']['uri']['pass'] = $this->config['password'];
 
     $result = json_decode($this->Socket->get('/'), true);
+    debug($result);
     /* http://wiki.apache.org/couchdb/HttpGetRoot
      * gotta be careful, since this can be set to ""
      * don't do that ;)
@@ -239,12 +239,12 @@ class CouchDBSource extends DataSource {
     }
 
     $t = round((microtime(true) - $t) * 1000, 0);
+    debug('exec '. $t);
 
     $result = json_decode($result, true);
     if (is_null($result)) {
       throw new CakeException(json_last_error());
     }
-    debug('exec');
 
     if ($this->logQueries && (count($this->_queriesLog) <= $this->_queriesLogMax)) {
       $this->_queriesCnt++;
