@@ -286,7 +286,7 @@ class CouchDBSource extends DataSource {
     if ($fields !== null && $values !== null) {
       $data = array_combine($fields, $values);
     }
-    debug($data)
+    debug($data);
 
     if (in_array($model->primaryKey, $data)) {
 
