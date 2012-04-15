@@ -127,6 +127,7 @@ class CouchDBSource extends DataSource {
   }
 
   private function basicAuth() {
+    debug('auth');
     $this->Socket->config['request']['uri']['user'] = $this->config['login'];
     $this->Socket->config['request']['uri']['pass'] = $this->config['password'];
 
@@ -243,6 +244,7 @@ class CouchDBSource extends DataSource {
     if (is_null($result)) {
       throw new CakeException(json_last_error());
     }
+    debug('exec');
 
     if ($this->logQueries && (count($this->_queriesLog) <= $this->_queriesLogMax)) {
       $this->_queriesCnt++;
@@ -314,7 +316,7 @@ class CouchDBSource extends DataSource {
       $model->data[$model->primaryKey] = $result['id'];
 
       $model->{$model->revisionKey} = $result['rev'];
-      return true;
+      return $data;
     }
 
     $model->onError();
