@@ -281,12 +281,12 @@ class CouchDBSource extends DataSource {
    *
    * see link on POST to understand why I generate uuid in here
    */
-
     $data = $model->data;
 
     if ($fields !== null && $values !== null) {
       $data = array_combine($fields, $values);
     }
+    debug($data)
 
     if (in_array($model->primaryKey, $data)) {
 
