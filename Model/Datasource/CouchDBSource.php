@@ -172,7 +172,7 @@ class CouchDBSource extends DataSource {
     return array_map('strtolower', $this->listSources());
   }
 
-  public function listSources() {
+/*  public function listSources() {
     if ($this->cacheSources === false) {
       return null;
     } elseif ($this->_sources !== null) {
@@ -190,19 +190,19 @@ class CouchDBSource extends DataSource {
     );
 
     // TODO:
-    /* I consider the above solution bad practice.. I think about implementing this view in futon
-     * and adding path to DATABASE_CONFIG
-     * maybe just optional
-     *
-     * currently requires admin privileges
-     * see http://wiki.apache.org/couchdb/Complete_HTTP_API_Reference
-     *  Database methods
-     *    POST /db/_temp_view
-     */
+    // I consider the above solution bad practice.. I think about implementing this view in futon
+    // and adding path to DATABASE_CONFIG
+    // maybe just optional
+    //
+    // currently requires admin privileges
+    // see http://wiki.apache.org/couchdb/Complete_HTTP_API_Reference
+    //  Database methods
+    //    POST /db/_temp_view
+    //
 
     return $this->_sources;
   }
-
+*/
   public function execute($url, $method = 'get', $data = '') {
     $t = microtime(true);
 
