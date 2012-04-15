@@ -127,7 +127,7 @@ class CouchDBSource extends DataSource {
   }
 
   private function basicAuth() {
-    $this->Socket->config['request']['uri']['user'] = $this->config['user'];
+    $this->Socket->config['request']['uri']['user'] = $this->config['login'];
     $this->Socket->config['request']['uri']['pass'] = $this->config['password'];
 
     $result = json_decode($this->Socket->get('/'), true);
