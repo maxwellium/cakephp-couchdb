@@ -21,6 +21,10 @@ $couchdb['models'] hereby refers to the document field, that most nosql-develope
 check out http://guide.couchdb.org/draft/validation.html#type on this matter
 
 
+Load Plugin at the end of bootstrap like this
+
+CakePlugin::load('CouchDB');
+
 
 in your application you can then create models like this:
 

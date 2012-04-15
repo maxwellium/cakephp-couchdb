@@ -235,11 +235,10 @@ class CouchDBSource extends DataSource {
 
   public function create(Model &$model, $fields = null, $values = null) {
   /*
-   * http://wiki.apache.org/couchdb/HTTP_Document_API#POST
+   * see http://wiki.apache.org/couchdb/HTTP_Document_API#POST to understand why I generate uuid in here
    * http://wiki.apache.org/couchdb/HTTP_Document_API#PUT
-   *
-   * see link on POST to understand why I generate uuid in here
    */
+
     $data = $model->data;
 
     if ($fields !== null && $values !== null) {
@@ -287,16 +286,20 @@ class CouchDBSource extends DataSource {
 
 
 //////////////////////////////////////////////////
-  public function read(Model &$model, $queryData = array()) {
+  public function read(Model &$model, $queryData = array(), $recursive = null) {
     debug('read');
+    debug($queryData);
     return array();
   }
   public function update(Model &$model, $fields = null, $values = null) {
     debug('update');
+    debug($fields);
+    debug($values);
     return array();
   }
   public function delete(Model &$model, $id = null) {
     debug('delete');
+    debug($id);
     return false;
   }
 
