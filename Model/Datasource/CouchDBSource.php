@@ -46,7 +46,6 @@ class CouchDBSource extends DataSource {
     'database'  => ''
   );
 
-  public $cacheSources = false;
   public $logQueries = true;
 
   protected $_queriesLog = array();
@@ -163,7 +162,17 @@ class CouchDBSource extends DataSource {
 
 
   public function describe(&$model) {
-    return null;
+    //constructing schema on the fly
+
+    $schema = array();
+
+    $schema[$model->primaryKey] = array(
+      'type' => 'string',
+      'null' => false,
+      'key' => 'primary',
+    );
+
+    return $schema;
   }
 
   public function sources($reset = false) {
@@ -301,10 +310,10 @@ class CouchDBSource extends DataSource {
       unset($data[$this->config['models']]);
       $model->data = $data;
 
-      $model->id = $result['id'];
-      $model->data['id'] = $result['id'];
+      $model->{$model->primaryKey} = $result['id'];
+      $model->data[$model->primaryKey] = $result['id'];
 
-      $model->rev = $result['rev'];
+      $model->{$model->revisionKey} = $result['rev'];
       return true;
     }
 
