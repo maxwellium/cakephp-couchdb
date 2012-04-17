@@ -43,7 +43,7 @@ class CouchDBAppModel extends AppModel {
       }
     }
 
-    // this is the change, rebuilding schema from data everytime:
+    // this is the change: rebuilding schema from data everytime so all fields are submitted
 
     //if (empty($this->_schema)) {
     $this->schema();
