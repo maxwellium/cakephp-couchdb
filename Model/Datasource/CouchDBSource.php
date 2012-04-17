@@ -291,10 +291,15 @@ class CouchDBSource extends DataSource {
     return false;
   }
 
-  public function calculate($model, $func, $params = array()) {
+  public function calculate(Model $model, $func, $params = array()) {
     return 'count';
   }
-
+  public function expression($expression) {
+    $obj = new stdClass();
+    $obj->type = 'expression';
+    $obj->value = $expression;
+    return $obj;
+  }
 
 
 //////////////////////////////////////////////////
