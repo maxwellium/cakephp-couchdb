@@ -2,33 +2,13 @@
 
 App::uses('HttpSocket', 'Network/Http');
 
-/**
-* Assuming a connection as follows:
-**/
-/*
-class DATABASE_CONFIG {
-
-  // remember to update $useDbConfig in Model or CouchDBAppModel.php if you change this name!
-  public $couchDB = array(
-    'datasource' => 'CouchDB.CouchDBSource',
-
-    'host'      => 'localhost', // optional
-    'port'      => 5984,        // optional
-    'login'     => 'root',
-    'password'  => 'root',
-
-    'models'    => 'type',      // (optional)
-    'database'  => 'cake',      // can be overridden in Model->database
-  );
-}
-
-*/
 
 class CouchDBSource extends DataSource {
 
   /**
   * See the parent class DataSource http://api.cakephp.org/class/data-source
   * and http://api.cakephp.org/class/data-source#method-DataSourcesetConfig
+  * on this convention
   **/
   protected $_baseconfig = array(
     'request'   => array(
@@ -137,8 +117,8 @@ class CouchDBSource extends DataSource {
     $response = $this->Socket->get('/');
     $result = json_decode($response->body(), true);
     /* http://wiki.apache.org/couchdb/HttpGetRoot
-     * gotta be careful, since this can be set to ""
-     * don't do that ;)
+     * gotta be careful, since this can be set to "", false or null
+     * so don't do that ;)
      */
 
     return ($response->code < 400) && (json_last_error() != JSON_ERROR_NONE) && ($result !== null);
@@ -164,9 +144,13 @@ class CouchDBSource extends DataSource {
     $this->disconnect();
   }
 
-  public function execute($url, $method = 'get', $data = array()) {
+  public function query($url, $method = 'get', $data = array()) {
     $t = microtime(true);
-    $e = '';
+    $errors = array(
+      'http'    => false,
+      'couch' => false,
+      'json'    => false
+    );
 
     $data = json_encode($data);
 
@@ -195,14 +179,17 @@ class CouchDBSource extends DataSource {
 
     // see http://guide.couchdb.org/draft/api.html on this test
     if ($response->code >= 400) {
-      $e .= ' HTTP: ' . $response->code . ' ' . $response->reasonPhrase . ';';
+      $errors['http'] = array(
+        'code' => $response->code,
+        'message' => $response->reasonPhrase
+      );
 
       if ((json_last_error() == JSON_ERROR_NONE) && is_array($result) && isset($result['error'])) {
-        $e .= ' CouchDB: ' . $result['error'];
+        $errors['couch'] = $result['error'];
       }
     }
     if (json_last_error() != JSON_ERROR_NONE) {
-      $e .= ' JSON Error: ' .json_last_error() .';';
+      $errors['json'] = json_last_error();
     }
 
     if ($this->logQueries && (count($this->_queriesLog) <= $this->_queriesLogMax)) {
@@ -214,17 +201,46 @@ class CouchDBSource extends DataSource {
         'affected'=> 0,
         'numRows' => 0,
         'took'    => $t,
-        'error'   => ltrim($e)
+        'error'   => $this->errorString($errors)
       );
     }
 
-    if ($e != '') {
-      throw new CakeException($e);
+    // the reason we're only throwing json-errors, is that couchDB can of course respond
+    // with a 404 when we're trying to find a document. since cakephp prefetches records
+    // when an id is set, this would destroy update logic.
+    if (($errors['json'] !== false) || ($errors['couch'] == 'unauthorized')) {
+      throw new CakeException($this->errorString($errors));
     }
 
-    return $result;
+    return array('result' => $result, 'errors' => $errors);
   }
 
+  public function errorString($errors) {
+    $e = '';
+    foreach ($errors as $type => $value) {
+      if ($value !== false) {
+        $e .= ' (' . $type . ')';
+        if (is_array($value)) {
+          foreach ($value as $info) {
+            $e .= ' ' . $info;
+          }
+        } else {
+          $e .= ' ' . $value;
+        }
+        $e .= ';';
+      }
+    }
+    return ltrim($e);
+  }
+
+  public function isError($errors) {
+    foreach ($errors as $error) {
+      if ($error !== false) {
+        return true;
+      }
+    }
+    return false;
+  }
 
   public function getLog($sorted = false, $clear = true) {
     if ($sorted) {
@@ -282,22 +298,22 @@ class CouchDBSource extends DataSource {
 
     $url = '/'. $this->getDB($model->database) . '/' . $id;
 
-    $result = $this->execute($url, 'put', $data);
+    $response = $this->query($url, 'put', $data);
 
-    if ($result['ok'] == true) {
+    if (isset($response['result']['ok']) && ($response['result']['ok'] == true)) {
 
       unset($data[$this->config['models']]);
       $model->data = $data;
 
       $model->id = $result['id'];
-      $model->data[$model->primaryKey] = $result['id'];
+      $model->data[$model->primaryKey] = $response['result']['id'];
 
-      $model->{$model->revisionKey} = $result['rev'];
+      $model->{$model->revisionKey} = $response['result']['rev'];
       return $data;
+    } else {
+      $model->onError();
+      return false;
     }
-
-    $model->onError();
-    return false;
   }
 
 
@@ -348,7 +364,11 @@ class CouchDBSource extends DataSource {
       isset($queryData['params']) ? $queryData['params'] : array()
     );
 
-    $rows = $this->execute($url, 'get', $params);
+    $response = $this->query($url, 'get', $params);
+
+    if ($this->isError($response['errors'])) {
+      return false;
+    }
 
     $result = array();
 
@@ -359,7 +379,7 @@ class CouchDBSource extends DataSource {
           $model->alias => array('count' => 1)
         );
       } else {
-        $result[] = array($model->alias => $rows);
+        $result[] = array($model->alias => $response['result']);
       }
     } else {
 
@@ -367,13 +387,13 @@ class CouchDBSource extends DataSource {
         // documents count is requested
         $result[] = array(
           $model->alias => array(
-            'count' => count($rows['rows'])
+            'count' => count($response['result']['rows'])
           )
         );
       } else {
         // a collection of documents is requested
-        if (isset($rows['rows']) && !empty($rows['rows'])){
-          foreach($rows['rows'] as $row) {
+        if (isset($response['result']['rows']) && !empty($response['result']['rows'])){
+          foreach($response['result']['rows'] as $row) {
             $result[] = array($model->alias => $row);
           }
         }
