@@ -328,14 +328,12 @@ class CouchDBSource extends DataSource {
       unset($queryData['params']['limit']);
     }
 
-    $url .= '?' . http_build_query(
-      array_merge($params, isset($queryData['params']) ? $queryData['params'] : array()),
-      '',
-      '&' // to avoid problems on some server configurations with php5.3
-    );    // see comment from 08-Feb-2011 12:11 on http://php.net/manual/de/function.http-build-query.php
+    $params = array_merge(
+      $params,
+      isset($queryData['params']) ? $queryData['params'] : array()
+    );
 
-
-    $rows = $this->execute($url);
+    $rows = $this->execute($url, $params);
 
     $result = array();
 
@@ -369,6 +367,7 @@ class CouchDBSource extends DataSource {
 
     return $result;
   }
+
   public function update(Model &$model, $fields = null, $values = null) {
     debug('update');
     debug($fields);
