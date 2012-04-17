@@ -53,4 +53,7 @@ Usage
 ### Create
 ### Read
 ### Update
+
+If no _rev is set in data, it will be fetched. Otherwise current revision will be checked against possible change and function returns false if separate change has occured in between.
+
 ### Delete

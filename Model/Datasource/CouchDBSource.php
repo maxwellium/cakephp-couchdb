@@ -311,7 +311,9 @@ class CouchDBSource extends DataSource {
 
     if (isset($response['result']['ok']) && ($response['result']['ok'] == true)) {
 
-      unset($data[$this->config['models']]);
+      if (($this->config['models'] !== false) && isset($data[$this->config['models']])) {
+        unset($data[$this->config['models']]);
+      }
       $model->data = $data;
 
       $model->id = $response['result']['id'];
@@ -414,17 +416,11 @@ class CouchDBSource extends DataSource {
 //////////////////////////////////////////////////
   public function update(Model &$model, $fields = array(), $values = null, $conditions = null) {
 
-    if ($values == null) {
+    if ($values === null) {
       $combined = $fields;
     } else {
       $combined = array_combine($fields, $values);
     }
-
-//    $fields = implode(', ', $this->_prepareUpdateFields($model, $combined, empty($conditions)));
-
-//    $alias = $joins = null;
-//    $table = $this->fullTableName($model);
-    //$conditions = $this->_matchRecords($model, $conditions);
 
     $id = false;
 
@@ -442,8 +438,59 @@ class CouchDBSource extends DataSource {
 
     $url = '/'. $this->getDB($model->database) . '/' . $id;
 
-    //if (!$combined[$model->revisionKey])
-    debug($this->query($url, 'head'));
+    if (!isset($combined[$model->revisionKey])) {
+      // http://wiki.apache.org/couchdb/HTTP_Document_API#HEAD
+      // to fetch revision
+      $response = $this->query($url, 'head');
+
+      if ($this->isError($response['errors'])) {
+        return false;
+      } else {
+        $combined[$model->revisionKey] = $response['headers']['Etag'];
+      }
+
+
+
+
+
+
+
+
+
+
+
+
+    $response = $this->query($url, 'put', $combined);
+
+    if (isset($response['result']['ok']) && ($response['result']['ok'] == true)) {
+      if (($this->config['models'] !== false) && !isset($data[$this->config['models']])) {
+        unset($data[$this->config['models']]);
+      }
+      $model->data = $data;
+
+      $model->id = $response['result']['id'];
+      $model->data[$model->primaryKey] = $response['result']['id'];
+
+      $model->{$model->revisionKey} = $response['result']['rev'];
+      return $data;
+    } else {
+      $model->onError();
+      return false;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+    }
+
 /*
     $query = compact('table', 'alias', 'joins', 'fields', 'conditions');
 
