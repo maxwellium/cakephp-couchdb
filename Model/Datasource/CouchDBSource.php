@@ -428,9 +428,9 @@ class CouchDBSource extends DataSource {
 
     $id = false;
 
-    if (in_array($model->primaryKey, array_keys($data))) {
-      $id = $data[$model->primaryKey];
-      unset($data[$model->primaryKey]);
+    if (in_array($model->primaryKey, array_keys($combined))) {
+      $id = $combined[$model->primaryKey];
+      unset($combined[$model->primaryKey]);
     }
     if ($model->id !== false) {
       $id = $model->id;
