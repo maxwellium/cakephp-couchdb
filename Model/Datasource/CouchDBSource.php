@@ -261,15 +261,24 @@ class CouchDBSource extends DataSource {
       $data = array_combine($fields, $values);
     }
 
-    if (in_array($model->primaryKey, $data)) {
+    $id = false;
 
+    if (in_array($model->primaryKey, $data)) {
       $id = $data[$model->primaryKey];
       unset($data[$model->primaryKey]);
-    } else {
+    }
 
+    if ($model->id !== false) {
+      $id = $model->id;
+    }
+
+    if ($id === false) {
       $id = String::uuid();
     }
-    $data[$this->config['models']] = strtolower($model->name);
+
+    if ($this->config['models'] !== false) {
+      $data[$this->config['models']] = strtolower($model->name);
+    }
 
     $url = '/'. $this->getDB($model->database) . '/' . $id;
 
@@ -339,7 +348,7 @@ class CouchDBSource extends DataSource {
       isset($queryData['params']) ? $queryData['params'] : array()
     );
 
-    $rows = $this->execute($url, $params);
+    $rows = $this->execute($url, 'get', $params);
 
     $result = array();
 

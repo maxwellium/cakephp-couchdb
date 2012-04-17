@@ -46,3 +46,11 @@ in your application you can then create models like this:
         .
       }
     ?>
+
+Usage
+-----
+
+### Create
+### Read
+### Update
+### Delete
