@@ -167,6 +167,10 @@ class CouchDBSource extends DataSource {
         $response = $this->Socket->delete($url, $data);
         break;
 
+      case 'head':
+        $response = $this->Socket->request(array('method' => 'HEAD', 'uri' => $url, 'body' => $data));
+        break
+
       case 'get':
       default:
         $response = $this->Socket->get($url, $data);
@@ -218,7 +222,7 @@ class CouchDBSource extends DataSource {
       throw new CakeException($this->errorString($errors));
     }
 
-    return array('result' => $result, 'errors' => $errors);
+    return array('result' => $result, 'errors' => $errors, 'headers' => $response->headers);
   }
 
   public function errorString($errors) {
@@ -297,7 +301,7 @@ class CouchDBSource extends DataSource {
       $id = String::uuid();
     }
 
-    if ($this->config['models'] !== false) {
+    if (($this->config['models'] !== false) && !isset($data[$this->config['models']])) {
       $data[$this->config['models']] = strtolower($model->name);
     }
 
@@ -408,7 +412,66 @@ class CouchDBSource extends DataSource {
   }
 
 //////////////////////////////////////////////////
-  public function update(Model &$model, $fields = null, $values = null) {
+  public function update(Model &$model, $fields = array(), $values = null, $conditions = null) {
+
+    if ($values == null) {
+      $combined = $fields;
+    } else {
+      $combined = array_combine($fields, $values);
+    }
+
+//    $fields = implode(', ', $this->_prepareUpdateFields($model, $combined, empty($conditions)));
+
+//    $alias = $joins = null;
+//    $table = $this->fullTableName($model);
+    //$conditions = $this->_matchRecords($model, $conditions);
+
+    $id = false;
+
+    if (in_array($model->primaryKey, array_keys($data))) {
+      $id = $data[$model->primaryKey];
+      unset($data[$model->primaryKey]);
+    }
+    if ($model->id !== false) {
+      $id = $model->id;
+    }
+
+    if ($id === false) {
+      return false;
+    }
+
+    $url = '/'. $this->getDB($model->database) . '/' . $id;
+
+    //if (!$combined[$model->revisionKey])
+    debug($this->query($url, 'head'));
+/*
+    $query = compact('table', 'alias', 'joins', 'fields', 'conditions');
+
+    if (!$this->execute($this->renderStatement('update', $query))) {
+      $model->onError();
+      return false;
+    }
+    return true;
+  }
+
+    // not all the fields can be passed there, so merge with the existing document
+    if ($fields !== null && $values !== null) {
+      $data = array_combine($fields, $values);
+      $id = $data[$model->primaryKey];
+      $actual_data = $model->find('first', array('conditions' => array($model->alias . '.id' => $id)));
+      if($actual_data) {
+        $data = array_merge($actual_data[$model->alias], $data);
+      }
+      unset($data[$model->primaryKey]);
+    }
+
+    return $this->decode($this->Socket->put(
+      sprintf('/%s/%s', $this->getDbName($model), $id),
+      $this->encode($data)
+    ));
+
+*/
+
     debug('update');
     debug($fields);
     debug($values);
@@ -418,6 +481,11 @@ class CouchDBSource extends DataSource {
     debug('delete');
     debug($id);
     return false;
+  }
+
+  public function requestHead($uri = null, $data = array(), $request = array()) {
+    $request = Set::merge(array('method' => 'HEAD', 'uri' => $uri, 'body' => $data), $request);
+    return $this->request($request);
   }
 
 }
