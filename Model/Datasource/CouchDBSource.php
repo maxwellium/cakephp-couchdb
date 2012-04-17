@@ -279,18 +279,14 @@ class CouchDBSource extends DataSource {
 
     $id = false;
 
-    debug($data);
-    debug($model);
-
     if (in_array($model->primaryKey, $data)) {
       $id = $data[$model->primaryKey];
-      debug($id);
       unset($data[$model->primaryKey]);
     }
 
+    debug($model);
     if ($model->id !== false) {
       $id = $model->id;
-      debug($id);
     }
 
     if ($id === false) {
@@ -354,7 +350,7 @@ class CouchDBSource extends DataSource {
 
           $params['startkey'] = $queryData['offset'];
           $params['skip'] = 1;
-          // ? increase skip value for real pagination with jumping? page * 10 e.g.?
+          // ? increase skip value for real pagination with page jumping? page * 10 e.g.?
 
         }
       }
