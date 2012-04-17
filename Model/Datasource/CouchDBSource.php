@@ -211,7 +211,10 @@ class CouchDBSource extends DataSource {
     // the reason we're only throwing json-errors, is that couchDB can of course respond
     // with a 404 when we're trying to find a document. since cakephp prefetches records
     // when an id is set, this would destroy update logic.
-    if (($errors['json'] !== false) || ($errors['couch']['error'] == 'unauthorized')) {
+    if (($errors['json'] !== false) ||
+      ($errors['couch']['error'] == 'unauthorized') ||
+      (isset($errors['couch']['reason']) && ($errors['couch']['reason']) == 'no_db_file')) {
+
       throw new CakeException($this->errorString($errors));
     }
 
