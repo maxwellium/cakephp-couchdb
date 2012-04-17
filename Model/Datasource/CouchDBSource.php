@@ -305,7 +305,7 @@ class CouchDBSource extends DataSource {
       unset($data[$this->config['models']]);
       $model->data = $data;
 
-      $model->id = $result['id'];
+      $model->id = $response['result']['id'];
       $model->data[$model->primaryKey] = $response['result']['id'];
 
       $model->{$model->revisionKey} = $response['result']['rev'];
