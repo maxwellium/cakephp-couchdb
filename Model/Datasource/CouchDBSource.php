@@ -43,7 +43,7 @@ class CouchDBSource extends DataSource {
 
     'authType'  => 'basic',
     'models'    => 'type',
-    'database'  => ''
+    'database'  => null
   );
 
   public $logQueries = true;
@@ -58,7 +58,9 @@ class CouchDBSource extends DataSource {
   **/
   public function __construct($config = null, $autoConnect = true){
     parent::__construct($config);
-    return $autoConnect ? $this->connect() : true;
+    if ($autoConnect) {
+      $this->connect();
+    }
   }
 
   public function setConfig($config = array()) {
@@ -162,7 +164,7 @@ class CouchDBSource extends DataSource {
     $this->disconnect();
   }
 
-  public function execute($url, $method = 'get', $data = '') {
+  public function execute($url, $method = 'get', $data = array()) {
     $t = microtime(true);
     $e = '';
 
@@ -193,10 +195,14 @@ class CouchDBSource extends DataSource {
 
     // see http://guide.couchdb.org/draft/api.html on this test
     if ($response->code >= 400) {
-      $e = $e. ' HTTP: ' . $response->code . ' ' . $response->reasonPhrase . ';';
+      $e .= ' HTTP: ' . $response->code . ' ' . $response->reasonPhrase . ';';
+
+      if ((json_last_error() == JSON_ERROR_NONE) && is_array($result) && isset($result['error'])) {
+        $e .= ' CouchDB: ' . $result['error'];
+      }
     }
     if (json_last_error() != JSON_ERROR_NONE) {
-      $e = $e . ' JSON Error: ' .json_last_error() .';';
+      $e .= ' JSON Error: ' .json_last_error() .';';
     }
 
     if ($this->logQueries && (count($this->_queriesLog) <= $this->_queriesLogMax)) {
@@ -208,7 +214,7 @@ class CouchDBSource extends DataSource {
         'affected'=> 0,
         'numRows' => 0,
         'took'    => $t,
-        'error'   => $e
+        'error'   => ltrim($e)
       );
     }
 
@@ -233,6 +239,16 @@ class CouchDBSource extends DataSource {
   }
 
 
+  public function getDB($modelDB = null) {
+    // see http://wiki.apache.org/couchdb/HTTP_database_API
+    // ? it doesn't tell whether $()+- need to be escaped as well..?
+    return str_replace(
+      '/',
+      '%2F',
+      is_null($modelDB) ? $this->config['database'] : $modelDB
+    );
+  }
+
   public function create(Model &$model, $fields = null, $values = null) {
   /*
    * see http://wiki.apache.org/couchdb/HTTP_Document_API#POST to understand why I generate uuid in here
@@ -255,11 +271,7 @@ class CouchDBSource extends DataSource {
     }
     $data[$this->config['models']] = strtolower($model->name);
 
-    $url = sprintf(
-      '/%s/%s',
-      is_null($model->database) ? $this->config['database'] : $model->database,
-      $id
-    );
+    $url = '/'. $this->getDB($model->database) . '/' . $id
 
     $result = $this->execute($url, 'put', $data);
 
@@ -287,9 +299,73 @@ class CouchDBSource extends DataSource {
 
 //////////////////////////////////////////////////
   public function read(Model &$model, $queryData = array(), $recursive = null) {
-    debug('read');
-    debug($queryData);
-    return array();
+
+    $url = '/' . $this->getDB($model->database) . '/';
+    $params = array();
+
+    if (isset($queryData['view']) && isset($queryData['design'])) {
+
+      $url .= '/_design/' . $queryData['design'] . '/_view/' . $queryData['view'];
+
+    } elseif(isset($queryData['conditions'][$model->alias . '.' . $model->primaryKey])) {
+
+      $url .= $queryData['conditions'][$model->alias . '.' . $model->primaryKey];
+
+    } else {
+
+      $url .= '_all_docs';
+
+      $params['include_docs'] = 'true';
+
+      if (!empty($queryData['limit'])) {
+        $params['limit'] = $queryData['limit'];
+      }
+    }
+
+    if($queryData['fields'] == 'count') {
+      unset($queryData['params']['limit']);
+    }
+
+    $url .= '?' . http_build_query(
+      array_merge($params, isset($queryData['params']) ? $queryData['params'] : array()),
+      '',
+      '&' // to avoid problems on some server configurations with php5.3
+    );    // see comment from 08-Feb-2011 12:11 on http://php.net/manual/de/function.http-build-query.php
+
+
+    $rows = $this->execute($url);
+
+    $result = array();
+
+    if (isset($queryData['conditions'][$model->alias . '.' . $model->primaryKey])) {
+
+      if ($queryData['fields'] == 'count') {
+        $result[] = array(
+          $model->alias => array('count' => 1)
+        );
+      } else {
+        $result[] = array($model->alias => $rows);
+      }
+    } else {
+
+      if($queryData['fields'] == 'count') {
+        // documents count is requested
+        $result[] = array(
+          $model->alias => array(
+            'count' => count($rows['rows'])
+          )
+        );
+      } else {
+        // a collection of documents is requested
+        if (isset($rows['rows']) && !empty($rows['rows'])){
+          foreach($rows['rows'] as $row) {
+            $result[] = array($model->alias => $row);
+          }
+        }
+      }
+    }
+
+    return $result;
   }
   public function update(Model &$model, $fields = null, $values = null) {
     debug('update');
