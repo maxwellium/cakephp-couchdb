@@ -292,7 +292,7 @@ class CouchDBSource extends DataSource {
   }
 
   public function calculate($model, $func, $params = array()) {
-    return 'COUNT';
+    return 'count';
   }
 
 
@@ -320,7 +320,20 @@ class CouchDBSource extends DataSource {
       $params['include_docs'] = 'true';
 
       if (!empty($queryData['limit'])) {
+
         $params['limit'] = $queryData['limit'];
+        $params['descending'] = 'true';
+
+        if (!empty($queryData['offset'])) {
+          // see http://stackoverflow.com/questions/3924089/previous-link-equivalent-of-limit-x-offset-y
+          // and http://guide.couchdb.org/draft/recipes.html#pagination
+          // on this. it'll enable us to use a somewhat crippled cakephp native pagination later :) neat, eh?
+
+          $params['startkey'] = $queryData['offset'];
+          $params['skip'] = 1;
+          // ? increase skip value for real pagination with jumping? page * 10 e.g.?
+
+        }
       }
     }
 
@@ -334,6 +347,7 @@ class CouchDBSource extends DataSource {
     );
 
     $rows = $this->execute($url, $params);
+    debug($rows);
 
     $result = array();
 
