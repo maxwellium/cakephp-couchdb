@@ -169,7 +169,7 @@ class CouchDBSource extends DataSource {
 
       case 'head':
         $response = $this->Socket->request(array('method' => 'HEAD', 'uri' => $url, 'body' => $data));
-        break
+        break;
 
       case 'get':
       default:
