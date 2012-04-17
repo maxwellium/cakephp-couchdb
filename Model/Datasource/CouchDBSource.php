@@ -378,6 +378,7 @@ class CouchDBSource extends DataSource {
         }
       }
     }
+    debug($result);
 
     return $result;
   }
