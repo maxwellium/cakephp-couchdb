@@ -291,21 +291,9 @@ class CouchDBSource extends DataSource {
     return false;
   }
 
-  public function calculate(Model $model, $func, $params = array()) {
-    return 'count';
-  }
-  public function expression($expression) {
-    $obj = new stdClass();
-    $obj->type = 'expression';
-    $obj->value = $expression;
-    return $obj;
-  }
-
 
 //////////////////////////////////////////////////
   public function read(Model &$model, $queryData = array(), $recursive = null) {
-
-    debug($queryData);
 
     $url = '/' . $this->getDB($model->database) . '/';
     $params = array();
@@ -352,7 +340,6 @@ class CouchDBSource extends DataSource {
     );
 
     $rows = $this->execute($url, $params);
-    debug($rows);
 
     $result = array();
 
@@ -383,7 +370,6 @@ class CouchDBSource extends DataSource {
         }
       }
     }
-    debug($result);
 
     return $result;
   }

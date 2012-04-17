@@ -53,4 +53,25 @@ class CouchDBAppModel extends AppModel {
     }
     return false;
   }
+
+
+  // simplify counting
+  protected function _findCount($state, $query, $results = array()) {
+    if ($state === 'before') {
+      $query['order'] = false;
+      $query['fields'] = 'count';
+      return $query;
+    } elseif ($state === 'after') {
+      foreach (array(0, $this->alias) as $key) {
+        if (isset($results[0][$key]['count'])) {
+          if (($count = count($results)) > 1) {
+            return $count;
+          } else {
+            return intval($results[0][$key]['count']);
+          }
+        }
+      }
+      return false;
+    }
+  }
 }
