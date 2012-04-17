@@ -289,7 +289,7 @@ class CouchDBSource extends DataSource {
       $id = $data[$model->primaryKey];
       unset($data[$model->primaryKey]);
     }
-
+debug($model->id);
     if ($model->id !== false) {
       $id = $model->id;
     }
