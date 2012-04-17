@@ -322,7 +322,6 @@ class CouchDBSource extends DataSource {
   }
 
 
-//////////////////////////////////////////////////
   public function read(Model &$model, $queryData = array(), $recursive = null) {
 
     $url = '/' . $this->getDB($model->database) . '/';
@@ -408,6 +407,7 @@ class CouchDBSource extends DataSource {
     return $result;
   }
 
+//////////////////////////////////////////////////
   public function update(Model &$model, $fields = null, $values = null) {
     debug('update');
     debug($fields);
