@@ -271,7 +271,7 @@ class CouchDBSource extends DataSource {
     }
     $data[$this->config['models']] = strtolower($model->name);
 
-    $url = '/'. $this->getDB($model->database) . '/' . $id
+    $url = '/'. $this->getDB($model->database) . '/' . $id;
 
     $result = $this->execute($url, 'put', $data);
 
@@ -299,6 +299,8 @@ class CouchDBSource extends DataSource {
 
 //////////////////////////////////////////////////
   public function read(Model &$model, $queryData = array(), $recursive = null) {
+
+    debug($queryData);
 
     $url = '/' . $this->getDB($model->database) . '/';
     $params = array();
