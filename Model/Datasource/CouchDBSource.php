@@ -203,7 +203,7 @@ class CouchDBSource extends DataSource {
       $this->_queriesCnt++;
       $this->_queriesTime += $t;
       $this->_queriesLog[] = array(
-        'query'   => $method . ' ' . $url,
+        'query'   => $method . ' ' . $url . ' ' . print_r($data, true),
         'params'  => $data,
         'affected'=> 0,
         'numRows' => 0,
@@ -222,7 +222,7 @@ class CouchDBSource extends DataSource {
       throw new CakeException($this->errorString($errors));
     }
 
-    return array('result' => $result, 'errors' => $errors, 'headers' => $response->headers);
+    return array('body' => $result, 'errors' => $errors, 'headers' => $response->headers);
   }
 
   public function errorString($errors) {
@@ -309,17 +309,17 @@ class CouchDBSource extends DataSource {
 
     $response = $this->query($url, 'put', $data);
 
-    if (isset($response['result']['ok']) && ($response['result']['ok'] == true)) {
+    if (isset($response['body']['ok']) && ($response['body']['ok'] == true)) {
 
       if (($this->config['models'] !== false) && isset($data[$this->config['models']])) {
         unset($data[$this->config['models']]);
       }
       $model->data = $data;
 
-      $model->id = $response['result']['id'];
-      $model->data[$model->primaryKey] = $response['result']['id'];
+      $model->id = $response['body']['id'];
+      $model->data[$model->primaryKey] = $response['body']['id'];
 
-      $model->{$model->revisionKey} = $response['result']['rev'];
+      $model->{$model->revisionKey} = $response['body']['rev'];
       return $data;
     } else {
       $model->onError();
@@ -389,7 +389,7 @@ class CouchDBSource extends DataSource {
           $model->alias => array('count' => 1)
         );
       } else {
-        $result[] = array($model->alias => $response['result']);
+        $result[] = array($model->alias => $response['body']);
       }
     } else {
 
@@ -397,13 +397,13 @@ class CouchDBSource extends DataSource {
         // documents count is requested
         $result[] = array(
           $model->alias => array(
-            'count' => count($response['result']['rows'])
+            'count' => count($response['body']['rows'])
           )
         );
       } else {
         // a collection of documents is requested
-        if (isset($response['result']['rows']) && !empty($response['result']['rows'])){
-          foreach($response['result']['rows'] as $row) {
+        if (isset($response['body']['rows']) && !empty($response['body']['rows'])){
+          foreach($response['body']['rows'] as $row) {
             $result[] = array($model->alias => $row);
           }
         }
@@ -417,16 +417,15 @@ class CouchDBSource extends DataSource {
   public function update(Model &$model, $fields = array(), $values = null, $conditions = null) {
 
     if ($values === null) {
-      $combined = $fields;
+      $data = $fields;
     } else {
-      $combined = array_combine($fields, $values);
+      $data = array_combine($fields, $values);
     }
 
     $id = false;
 
-    if (in_array($model->primaryKey, array_keys($combined))) {
-      $id = $combined[$model->primaryKey];
-      unset($combined[$model->primaryKey]);
+    if (in_array($model->primaryKey, array_keys($data))) {
+      $id = $data[$model->primaryKey];
     }
     if ($model->id !== false) {
       $id = $model->id;
@@ -438,7 +437,8 @@ class CouchDBSource extends DataSource {
 
     $url = '/'. $this->getDB($model->database) . '/' . $id;
 
-    if (!isset($combined[$model->revisionKey])) {
+
+    if (!isset($data[$model->revisionKey])) {
       // http://wiki.apache.org/couchdb/HTTP_Document_API#HEAD
       // to fetch revision
       $response = $this->query($url, 'head');
@@ -446,37 +446,33 @@ class CouchDBSource extends DataSource {
       if ($this->isError($response['errors'])) {
         return false;
       } else {
-        $combined[$model->revisionKey] = $response['headers']['Etag'];
+        $data[$model->revisionKey] = $response['headers']['Etag'];
       }
+    }
 
-
-
-
-
-
-
-
-
-
-
+    if (in_array($model->primaryKey, array_keys($data))) {
+      unset($data[$model->primaryKey]);
+    }
 
     $response = $this->query($url, 'put', $combined);
+    $data = $response['body'];
 
-    if (isset($response['result']['ok']) && ($response['result']['ok'] == true)) {
+    if (isset($response['body']['ok']) && ($response['body']['ok'] == true)) {
       if (($this->config['models'] !== false) && !isset($data[$this->config['models']])) {
         unset($data[$this->config['models']]);
       }
       $model->data = $data;
 
-      $model->id = $response['result']['id'];
-      $model->data[$model->primaryKey] = $response['result']['id'];
+      $model->id = $response['body']['id'];
+      $model->data[$model->primaryKey] = $response['body']['id'];
 
-      $model->{$model->revisionKey} = $response['result']['rev'];
+      $model->{$model->revisionKey} = $response['body']['rev'];
       return $data;
     } else {
       $model->onError();
       return false;
     }
+
 
 
 
