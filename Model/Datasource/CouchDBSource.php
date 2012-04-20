@@ -454,8 +454,9 @@ class CouchDBSource extends DataSource {
       unset($data[$model->primaryKey]);
     }
 
-    $response = $this->query($url, 'put', $combined);
-    $data = $response['body'];
+    $response = $this->query($url, 'put', $data);
+
+    debug($response);
 
     if (isset($response['body']['ok']) && ($response['body']['ok'] == true)) {
       if (($this->config['models'] !== false) && !isset($data[$this->config['models']])) {
