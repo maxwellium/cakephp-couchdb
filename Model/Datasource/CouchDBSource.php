@@ -513,13 +513,14 @@ class CouchDBSource extends DataSource {
       $this->encode($data)
     ));
 
-*/
+
 
     debug('update');
     debug($fields);
     debug($values);
     return array();
   }
+  */
   public function delete(Model &$model, $id = null) {
     debug('delete');
     debug($id);
