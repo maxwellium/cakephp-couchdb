@@ -154,6 +154,8 @@ class CouchDBSource extends DataSource {
 
     $data = json_encode($data);
 
+    //TODO: remove switch, validate method against array and use request on all
+
     switch ($method) {
       case 'post':
         $response = $this->Socket->post($url, $data);
@@ -167,6 +169,8 @@ class CouchDBSource extends DataSource {
         $response = $this->Socket->delete($url, $data);
         break;
 
+      // http://wiki.apache.org/couchdb/HTTP_Document_API#HEAD
+      // to fetch revision
       case 'head':
         $response = $this->Socket->request(array('method' => 'HEAD', 'uri' => $url, 'body' => $data));
         break;
@@ -291,7 +295,7 @@ class CouchDBSource extends DataSource {
 
     if (in_array($model->primaryKey, array_keys($data))) {
       $id = $data[$model->primaryKey];
-      unset($data[$model->primaryKey]);
+      //unset($data[$model->primaryKey]);
     }
     if ($model->id !== false) {
       $id = $model->id;
@@ -311,15 +315,12 @@ class CouchDBSource extends DataSource {
 
     if (isset($response['body']['ok']) && ($response['body']['ok'] == true)) {
 
-      if (($this->config['models'] !== false) && isset($data[$this->config['models']])) {
-        unset($data[$this->config['models']]);
-      }
       $model->data = $data;
 
       $model->id = $response['body']['id'];
       $model->data[$model->primaryKey] = $response['body']['id'];
 
-      $model->{$model->revisionKey} = $response['body']['rev'];
+      $model->data[$model->revisionKey] = $response['body']['rev'];
       return $data;
     } else {
       $model->onError();
@@ -345,8 +346,6 @@ class CouchDBSource extends DataSource {
 
       $url .= '_all_docs';
 
-      $params['include_docs'] = 'true';
-
       if (!empty($queryData['limit'])) {
 
         $params['limit'] = $queryData['limit'];
@@ -357,7 +356,7 @@ class CouchDBSource extends DataSource {
           // and http://guide.couchdb.org/draft/recipes.html#pagination
           // on this. it'll enable us to use a somewhat crippled cakephp native pagination later :) neat, eh?
 
-          $params['startkey'] = $queryData['offset'];
+          $params['startkey'] = json_encode($queryData['offset']);
           $params['skip'] = 1;
           // ? increase skip value for real pagination with page jumping? page * 10 e.g.?
 
@@ -365,8 +364,10 @@ class CouchDBSource extends DataSource {
       }
     }
 
-    if($queryData['fields'] == 'count') {
+    if ($queryData['fields'] == 'count') {
       unset($queryData['params']['limit']);
+    } else {
+      $params['include_docs'] = 'true';
     }
 
     $params = array_merge(
@@ -437,26 +438,22 @@ class CouchDBSource extends DataSource {
 
     $url = '/'. $this->getDB($model->database) . '/' . $id;
 
-
     if (!isset($data[$model->revisionKey])) {
-      // http://wiki.apache.org/couchdb/HTTP_Document_API#HEAD
-      // to fetch revision
-      $response = $this->query($url, 'head');
+      $response = $this->query($url, 'get');
 
       if ($this->isError($response['errors'])) {
         return false;
       } else {
-        $data[$model->revisionKey] = trim($response['headers']['Etag'], '"');
+        $data = array_merge($response['body'], $data);
+        $data[$model->revisionKey] = $response['body'][$model->revisionKey];
       }
     }
 
     if (in_array($model->primaryKey, array_keys($data))) {
-      unset($data[$model->primaryKey]);
+      //unset($data[$model->primaryKey]);
     }
 
     $response = $this->query($url, 'put', $data);
-
-    debug($response);
 
     if (isset($response['body']['ok']) && ($response['body']['ok'] == true)) {
       if (($this->config['models'] !== false) && !isset($data[$this->config['models']])) {
@@ -467,61 +464,14 @@ class CouchDBSource extends DataSource {
       $model->id = $response['body']['id'];
       $model->data[$model->primaryKey] = $response['body']['id'];
 
-      $model->{$model->revisionKey} = $response['body']['rev'];
+      $model->data[$model->revisionKey] = $response['body']['rev'];
       return $data;
     } else {
       $model->onError();
       return false;
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-    }
-
-/*
-    $query = compact('table', 'alias', 'joins', 'fields', 'conditions');
-
-    if (!$this->execute($this->renderStatement('update', $query))) {
-      $model->onError();
-      return false;
-    }
-    return true;
   }
 
-    // not all the fields can be passed there, so merge with the existing document
-    if ($fields !== null && $values !== null) {
-      $data = array_combine($fields, $values);
-      $id = $data[$model->primaryKey];
-      $actual_data = $model->find('first', array('conditions' => array($model->alias . '.id' => $id)));
-      if($actual_data) {
-        $data = array_merge($actual_data[$model->alias], $data);
-      }
-      unset($data[$model->primaryKey]);
-    }
-
-    return $this->decode($this->Socket->put(
-      sprintf('/%s/%s', $this->getDbName($model), $id),
-      $this->encode($data)
-    ));
-
-
-
-    debug('update');
-    debug($fields);
-    debug($values);
-    return array();
-  }
-  */
   public function delete(Model &$model, $id = null) {
     debug('delete');
     debug($id);
