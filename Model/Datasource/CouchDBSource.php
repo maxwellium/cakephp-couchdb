@@ -446,7 +446,7 @@ class CouchDBSource extends DataSource {
       if ($this->isError($response['errors'])) {
         return false;
       } else {
-        $data[$model->revisionKey] = $response['headers']['Etag'];
+        $data[$model->revisionKey] = trim($response['headers']['Etag'], '"');
       }
     }
 
