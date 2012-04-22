@@ -482,7 +482,8 @@ class CouchDBSource extends DataSource {
     } elseif (isset($model->data[$model->revisionKey])) {
       $revision = $model->data[$model->revisionKey];
     }
-
+debug($id);
+debug($revision);
     if (($id === false) || ($revision === false)) {
       return false;
     }
