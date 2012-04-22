@@ -460,7 +460,6 @@ class CouchDBSource extends DataSource {
       $model->data[$model->primaryKey] = $response['body']['id'];
 
       $model->data[$model->revisionKey] = $response['body']['rev'];
-      debug($model->data);
       return true;
     } else {
       $model->onError();
@@ -495,7 +494,7 @@ class CouchDBSource extends DataSource {
   }
 
   public function getRevision(Model $model, $id = false) {
-    if ($id === false) {
+    if (($id === false) && isset($model->data[$model->primaryKey])) {
       $id = $model->data[$model->primaryKey];
     }
     if ($id === false) {
@@ -511,7 +510,7 @@ class CouchDBSource extends DataSource {
     // to fetch revision
     $response = $this->query($url, 'head');
 
-    if ($this->isError($response['errors'])) {
+    if ( $this->isError($response['errors']) || (!isset($response['headers']['Etag'])) ) {
       return false;
     } else {
       return trim($response['headers']['Etag'], '"');
