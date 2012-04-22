@@ -480,7 +480,7 @@ class CouchDBSource extends DataSource {
     if (in_array($model->alias . '.' . $model->revisionKey, array_keys($conditions))) {
       $revision = $conditions[$model->alias . '.' . $model->revisionKey];
     } elseif (isset($model->data[$model->revisionKey])) {
-      $revision = $model->data[$model->revisionKey;
+      $revision = $model->data[$model->revisionKey];
     }
 
     if (($id === false) || ($revision === false)) {
