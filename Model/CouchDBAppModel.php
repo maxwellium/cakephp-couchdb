@@ -80,6 +80,6 @@ class CouchDBAppModel extends AppModel {
     if (!is_array($this->data)) {
       $this->data = array();
     }
-    $this->data[$this->revisionKey] = $this->getDataSource()->getRevision($this->id);
+    $this->data[$this->revisionKey] = $this->getDataSource()->getRevision($this);
   }
 }

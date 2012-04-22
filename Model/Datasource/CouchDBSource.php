@@ -494,7 +494,17 @@ class CouchDBSource extends DataSource {
     return !$this->isError($response['errors']) && ($response['body']['ok'] == true);
   }
 
-  public function getRevision($id) {
+  public function getRevision(Model $model, $id = false) {
+    if ($id === false) {
+      $id = $model->data[$model->primaryKey];
+    }
+    if ($id === false) {
+      $id = $model->id;
+    }
+    if ($id === false) {
+      return false;
+    }
+
     $url = '/'. $this->getDB($model->database) . '/' . $id;
 
     // http://wiki.apache.org/couchdb/HTTP_Document_API#HEAD
