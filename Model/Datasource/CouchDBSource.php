@@ -496,4 +496,18 @@ debug($revision);
     return !$this->isError($response['errors']) && ($response['body']['ok'] == true);
   }
 
+  public function getRevision(id) {
+    $url = '/'. $this->getDB($model->database) . '/' . $id;
+
+    // http://wiki.apache.org/couchdb/HTTP_Document_API#HEAD
+    // to fetch revision
+    $response = $this->query($url, 'head');
+
+    if ($this->isError($response['errors'])) {
+      return false;
+    } else {
+      return trim($response['headers']['Etag'], '"');
+    }
+  }
+
 }

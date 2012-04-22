@@ -75,4 +75,11 @@ class CouchDBAppModel extends AppModel {
       return false;
     }
   }
+
+  public function updateRevision() {
+    if (!is_array($this->data)) {
+      $this->data = array();
+    }
+    $this->data[$this->revisionKey] = $this->getDataSource()->getRevision($this->id);
+  }
 }
