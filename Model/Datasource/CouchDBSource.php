@@ -483,9 +483,7 @@ class CouchDBSource extends DataSource {
     } elseif (isset($model->data[$model->revisionKey])) {
       $revision = $model->data[$model->revisionKey];
     }
-debug($conditions);
-debug($id);
-debug($revision);
+
     if (($id === false) || ($revision === false)) {
       return false;
     }
@@ -496,7 +494,7 @@ debug($revision);
     return !$this->isError($response['errors']) && ($response['body']['ok'] == true);
   }
 
-  public function getRevision(id) {
+  public function getRevision($id) {
     $url = '/'. $this->getDB($model->database) . '/' . $id;
 
     // http://wiki.apache.org/couchdb/HTTP_Document_API#HEAD
