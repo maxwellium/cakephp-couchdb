@@ -460,7 +460,7 @@ class CouchDBSource extends DataSource {
       $model->data[$model->primaryKey] = $response['body']['id'];
 
       $model->data[$model->revisionKey] = $response['body']['rev'];
-      return $data;
+      return true;
     } else {
       $model->onError();
       return false;
