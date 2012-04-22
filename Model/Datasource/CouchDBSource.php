@@ -154,7 +154,7 @@ class CouchDBSource extends DataSource {
 
     $data = json_encode($data);
 
-    //TODO: remove switch, validate method against array and use request on all
+    //TODO: remove switch, validate method against an array and use request on all
 
     switch ($method) {
       case 'post':
@@ -295,7 +295,6 @@ class CouchDBSource extends DataSource {
 
     if (in_array($model->primaryKey, array_keys($data))) {
       $id = $data[$model->primaryKey];
-      //unset($data[$model->primaryKey]);
     }
     if ($model->id !== false) {
       $id = $model->id;
@@ -449,10 +448,6 @@ class CouchDBSource extends DataSource {
       }
     }
 
-    if (in_array($model->primaryKey, array_keys($data))) {
-      //unset($data[$model->primaryKey]);
-    }
-
     $response = $this->query($url, 'put', $data);
 
     if (isset($response['body']['ok']) && ($response['body']['ok'] == true)) {
@@ -472,15 +467,28 @@ class CouchDBSource extends DataSource {
     }
   }
 
-  public function delete(Model &$model, $id = null) {
-    debug('delete');
-    debug($id);
-    return false;
-  }
+  public function delete(Model $model, $conditions = null) {
+    $id = false;
+    $revision = false;
 
-  public function requestHead($uri = null, $data = array(), $request = array()) {
-    $request = Set::merge(array('method' => 'HEAD', 'uri' => $uri, 'body' => $data), $request);
-    return $this->request($request);
+    if (in_array($model->primaryKey, array_keys($conditions))) {
+      $id = $conditions[$model->primaryKey];
+    } else if ($model->id !== false) {
+      $id = $model->id;
+    }
+
+    if (in_array($model->revisionKey, array_keys($conditions))) {
+      $revision = $conditions[$model->revisionKey];
+    }
+
+    if (($id === false) || ($revision === false)) {
+      return false;
+    }
+
+    $url = '/'. $this->getDB($model->database) . '/' . $id . '?rev=' . $revision;
+    $response = $this->query($url, 'delete');
+
+    return !$this->isError($response['errors']) && ($response['body']['ok'] == true);
   }
 
 }
