@@ -11,12 +11,15 @@ class CouchDBAppModel extends AppModel {
   /*
    * had to overwrite these two functions since we will not predefine our schema :)
    * nonsqlfreedom
+   * + scaffolding awesomeness
    */
   public function schema($field = false) {
+    $this->_schema = array_flip(array_keys($this->validate));
     if (isset($this->data[$this->alias]) && is_array($this->data[$this->alias])) {
-      $this->_schema = array_flip(array_keys($this->data[$this->alias]));
-    } else {
-      $this->_schema = array();
+      $this->_schema = array_merge(
+        $this->_schema,
+        array_flip(array_keys($this->data[$this->alias]))
+      );
     }
 
     if (is_string($field)) {
