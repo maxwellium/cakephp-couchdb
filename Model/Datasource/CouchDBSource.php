@@ -79,7 +79,6 @@ class CouchDBSource extends DataSource {
             break;
         }
 
-        // ? throw error if still not connected
       } catch (Exception $e) {
         throw new MissingConnectionException(array('class' => $e->getMessage()));
       }
