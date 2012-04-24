@@ -80,7 +80,7 @@ class CouchDBSource extends DataSource {
         }
 
         // ? throw error if still not connected
-      } catch (SocketException $e) {
+      } catch (Exception $e) {
         throw new MissingConnectionException(array('class' => $e->getMessage()));
       }
     }
@@ -104,10 +104,14 @@ class CouchDBSource extends DataSource {
     );
 
     $result = json_decode($response->body(), true);
-debug($response);
-    return ($response->code < 400) &&
-      (json_last_error() != JSON_ERROR_NONE) &&
-      (!isset($result['error']));
+
+    $errors = $this->getErrors($response, $result);
+
+    if ($this->isError($errors)) {
+      throw new CakeException($this->errorString($errors));
+    } else {
+      return true;
+    }
   }
 
   private function basicAuth() {
@@ -116,17 +120,20 @@ debug($response);
 
     $response = $this->Socket->get('/');
     $result = json_decode($response->body(), true);
-debug($response);
+
+    $errors = $this->getErrors($response, $result);
     /* http://wiki.apache.org/couchdb/HttpGetRoot
-     * gotta be careful, since this can be set to anything, even {"error": "hi"},
+     * gotta be careful, since result can be set to anything, even {"error": "hi"},
      * false or null
      *
      * so don't do that ;)
      */
 
-    return ($response->code < 400) &&
-      (json_last_error() != JSON_ERROR_NONE) &&
-      (!isset($result['error']));
+    if ($this->isError($errors)) {
+      throw new CakeException($this->errorString($errors));
+    } else {
+      return true;
+    }
   }
 
   public function reconnect($config = null) {
@@ -151,11 +158,6 @@ debug($response);
 
   public function query($url, $method = 'get', $data = array()) {
     $t = microtime(true);
-    $errors = array(
-      'http'    => false,
-      'couch' => false,
-      'json'    => false
-    );
 
     $data = json_encode($data);
 
@@ -190,23 +192,7 @@ debug($response);
 
     $result = json_decode($response->body(), true);
 
-    // see http://guide.couchdb.org/draft/api.html on this test
-    if ($response->code >= 400) {
-      $errors['http'] = array(
-        'code' => $response->code,
-        'message' => $response->reasonPhrase
-      );
-
-      if ((json_last_error() == JSON_ERROR_NONE) && is_array($result) && isset($result['error'])) {
-        $errors['couch'] = array('error' => $result['error']);
-        if (isset($result['reason'])) {
-          $errors['couch']['reason'] = $result['reason'];
-        }
-      }
-    }
-    if (json_last_error() != JSON_ERROR_NONE) {
-      $errors['json'] = json_last_error();
-    }
+    $errors = $this->getErrors($response, $result);
 
     if ($this->logQueries && (count($this->_queriesLog) <= $this->_queriesLogMax)) {
       $this->_queriesCnt++;
@@ -234,7 +220,35 @@ debug($response);
     return array('body' => $result, 'errors' => $errors, 'headers' => $response->headers);
   }
 
-  public function errorString($errors) {
+  private function getErrors(&$response, &$result) {
+    $errors = array(
+      'http'    => false,
+      'couch' => false,
+      'json'    => false
+    );
+
+    // see http://guide.couchdb.org/draft/api.html on this test
+    if ($response->code >= 400) {
+      $errors['http'] = array(
+        'code' => $response->code,
+        'message' => $response->reasonPhrase
+      );
+
+      if ((json_last_error() == JSON_ERROR_NONE) && is_array($result) && isset($result['error'])) {
+        $errors['couch'] = array('error' => $result['error']);
+        if (isset($result['reason'])) {
+          $errors['couch']['reason'] = $result['reason'];
+        }
+      }
+    }
+    if (json_last_error() != JSON_ERROR_NONE) {
+      $errors['json'] = json_last_error();
+    }
+
+    return $errors;
+  }
+
+  private function errorString($errors) {
     $e = '';
     foreach ($errors as $type => $value) {
       if ($value !== false) {
@@ -252,7 +266,7 @@ debug($response);
     return ltrim($e);
   }
 
-  public function isError($errors) {
+  private function isError($errors) {
     foreach ($errors as $error) {
       if ($error !== false) {
         return true;
