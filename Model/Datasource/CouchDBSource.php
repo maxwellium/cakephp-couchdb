@@ -104,7 +104,7 @@ class CouchDBSource extends DataSource {
     );
 
     $result = json_decode($response->body(), true);
-
+debug($response);
     return ($response->code < 400) &&
       (json_last_error() != JSON_ERROR_NONE) &&
       isset($result['ok']) && ($result['ok'] == true);
@@ -116,6 +116,7 @@ class CouchDBSource extends DataSource {
 
     $response = $this->Socket->get('/');
     $result = json_decode($response->body(), true);
+debug($response);
     /* http://wiki.apache.org/couchdb/HttpGetRoot
      * gotta be careful, since this can be set to "", false or null
      * so don't do that ;)
