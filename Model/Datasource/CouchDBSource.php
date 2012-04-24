@@ -107,7 +107,7 @@ class CouchDBSource extends DataSource {
 debug($response);
     return ($response->code < 400) &&
       (json_last_error() != JSON_ERROR_NONE) &&
-      isset($result['ok']) && ($result['ok'] == true);
+      (!isset($result['error']));
   }
 
   private function basicAuth() {
@@ -118,11 +118,15 @@ debug($response);
     $result = json_decode($response->body(), true);
 debug($response);
     /* http://wiki.apache.org/couchdb/HttpGetRoot
-     * gotta be careful, since this can be set to "", false or null
+     * gotta be careful, since this can be set to anything, even {"error": "hi"},
+     * false or null
+     *
      * so don't do that ;)
      */
 
-    return ($response->code < 400) && (json_last_error() != JSON_ERROR_NONE) && ($result !== null);
+    return ($response->code < 400) &&
+      (json_last_error() != JSON_ERROR_NONE) &&
+      (!isset($result['error']));
   }
 
   public function reconnect($config = null) {
