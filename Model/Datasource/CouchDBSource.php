@@ -328,7 +328,7 @@ class CouchDBSource extends DataSource {
 
     $url = '/'. $this->getDB($model->database) . '/' . $id;
 
-    $response = $this->query($url, 'put', ,array(), $data);
+    $response = $this->query($url, 'put', array(), $data);
 
     if (isset($response['body']['ok']) && ($response['body']['ok'] == true)) {
 
