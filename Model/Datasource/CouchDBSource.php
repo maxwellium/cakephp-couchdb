@@ -422,7 +422,7 @@ class CouchDBSource extends DataSource {
         // a collection of documents is requested
         if (isset($response['body']['rows']) && !empty($response['body']['rows'])){
           foreach($response['body']['rows'] as $row) {
-            $result[] = array($model->alias => $row);
+            $result[] = array($model->alias => $row['doc']);
           }
         }
       }
