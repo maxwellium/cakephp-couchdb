@@ -197,7 +197,7 @@ class CouchDBSource extends DataSource {
       $this->_queriesCnt++;
       $this->_queriesTime += $t;
       $this->_queriesLog[] = array(
-        'query'   => $method . ' ' . $url . ' ' . print_r($data, true),
+        'query'   => $method . ' ' . $url . ' ' . print_r($query, true), ' ' . print_r($data, true)
         'params'  => $data,
         'affected'=> 0,
         'numRows' => 0,
