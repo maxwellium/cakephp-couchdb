@@ -155,7 +155,7 @@ class CouchDBSource extends DataSource {
     $this->disconnect();
   }
 
-  public function query($url, $method = 'get', $data = array()) {
+  public function query($url, $method = 'get', $query = array(), $data = array()) {
     $t = microtime(true);
 
     $data = json_encode($data);
@@ -183,7 +183,7 @@ class CouchDBSource extends DataSource {
 
       case 'get':
       default:
-        $response = $this->Socket->get($url, $data);
+        $response = $this->Socket->get($url, $query, $data);
         break;
     }
 
@@ -328,7 +328,7 @@ class CouchDBSource extends DataSource {
 
     $url = '/'. $this->getDB($model->database) . '/' . $id;
 
-    $response = $this->query($url, 'put', $data);
+    $response = $this->query($url, 'put', ,array(), $data);
 
     if (isset($response['body']['ok']) && ($response['body']['ok'] == true)) {
 
@@ -466,7 +466,7 @@ class CouchDBSource extends DataSource {
       }
     }
 
-    $response = $this->query($url, 'put', $data);
+    $response = $this->query($url, 'put', array(), $data);
 
     if (isset($response['body']['ok']) && ($response['body']['ok'] == true)) {
       if (($this->config['models'] !== false) && !isset($data[$this->config['models']])) {
