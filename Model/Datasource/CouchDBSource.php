@@ -492,7 +492,7 @@ class CouchDBSource extends DataSource {
 		$params = array();
 
 		if (isset($queryData['view']) && isset($queryData['design'])) {
-			$url .= '/_design/' . $queryData['design'] . '/_view/' . $queryData['view'];
+			$url .= '_design/' . $queryData['design'] . '/_view/' . $queryData['view'];
 			if (isset($queryData['params']) && is_array($queryData['params'])) {
 				foreach ($queryData['params'] as $parameter => $value) {
 					$params[$parameter] = json_encode($value);
