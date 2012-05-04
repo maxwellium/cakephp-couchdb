@@ -1,9 +1,9 @@
 <?php
 /**
  * CouchDBSource Datasource file
- * 
+ *
  * Provides a CouchDB Datasource for CakePHP
- * 
+ *
  * @author maxwellium - https://github.com/maxwellium
  * @package CouchDB
  * @subpackage Model.Datassource
@@ -13,7 +13,7 @@ App::uses('HttpSocket', 'Network/Http');
 
 /**
  * This is the CouchDB Datasource class
- * 
+ *
  * @package CouchDB
  * @subpackage Model.Datasource
  */
@@ -21,7 +21,7 @@ class CouchDBSource extends DataSource {
 
 /**
  * The Datasource's default configuration
- * 
+ *
  * @var array
  * @access protected
  */
@@ -42,7 +42,7 @@ class CouchDBSource extends DataSource {
 
 /**
  * Wether or not queries should be logged
- * 
+ *
  * @var boolean
  * @access public
  */
@@ -50,7 +50,7 @@ class CouchDBSource extends DataSource {
 
 /**
  * Holds the various query logs for a request
- * 
+ *
  * @var array
  * @access protected
  */
@@ -58,7 +58,7 @@ class CouchDBSource extends DataSource {
 
 /**
  * Holds the query count
- * 
+ *
  * @var integer
  * @access protected
  */
@@ -66,7 +66,7 @@ class CouchDBSource extends DataSource {
 
 /**
  * Holds the queries time
- * 
+ *
  * @var integer
  * @access protected
  */
@@ -74,7 +74,7 @@ class CouchDBSource extends DataSource {
 
 /**
  * The maximum amount of queries that may be logged
- * 
+ *
  * @var integer
  * @access protected
  */
@@ -82,10 +82,10 @@ class CouchDBSource extends DataSource {
 
 /**
  * CouchDBSource Constructor
- * 
+ *
  * @param array $config The configuration for the Datasource
  * @param boolean $autoConnect If true, automatically connects the Datasource
- * 
+ *
  * @return void
  * @access public
  * @link http://api.cakephp.org/class/data-source#method-DataSource__construct
@@ -119,7 +119,7 @@ class CouchDBSource extends DataSource {
 
 /**
  * Connects the Datasource
- * 
+ *
  * @return boolean
  * @access public
  * @throws MissingConnectionException
@@ -150,7 +150,7 @@ class CouchDBSource extends DataSource {
 
 /**
  * Implements Cookie authentication
- * 
+ *
  * @return boolean
  * @access protected
  * @throws CakeException
@@ -181,12 +181,12 @@ class CouchDBSource extends DataSource {
 
 /**
  * Implements Basic Authentication
- * 
+ *
  * @return boolean
  * @access protected
- * 
+ *
  * @throws CakeException
- * 
+ *
  * @see http://wiki.apache.org/couchdb/HttpGetRoot
  */
 	protected function _basicAuth() {
@@ -206,12 +206,12 @@ class CouchDBSource extends DataSource {
 
 /**
  * Reconnects the Datasource
- * 
+ *
  * @param array $config The config to be used for the reconnect
- * 
+ *
  * @return boolean
  * @access public
- * 
+ *
  * @throws MissingConnectionException
  */
 	public function reconnect($config = array()) {
@@ -223,7 +223,7 @@ class CouchDBSource extends DataSource {
 
 /**
  * Disconnects the datasource
- * 
+ *
  * @return boolean
  * @access public
  */
@@ -246,17 +246,17 @@ class CouchDBSource extends DataSource {
 
 /**
  * Performs a query on the couchDB database
- * 
+ *
  * @param string $url The URL to be queried
  * @param string $method The HTTP method to be used (GET, POST, PUT, DELETE, HEAD)
  * @param array $query The query params
  * @param array $data The data to be passed
- * 
+ *
  * @return array The result array consisting of 'body', 'errors' and 'headers' keys
  * @access public
- * 
+ *
  * @throws CakeException
- * 
+ *
  * @todo remove switch, validate method against an array and use request on all
  */
 	public function query($url, $method = 'get', $query = array(), $data = array()) {
@@ -315,13 +315,13 @@ class CouchDBSource extends DataSource {
 
 /**
  * Gets the errors from the HttpResponse object
- * 
+ *
  * @param HttpResponse &$response A reference to the HttpResponse object
  * @param stdClass &$result A reference to the stdClass result object
- * 
+ *
  * @return array The errors array
  * @access protected
- * 
+ *
  * @see http://guide.couchdb.org/draft/api.html on this test
  */
 	protected function _getErrors(&$response, &$result) {
@@ -354,9 +354,9 @@ class CouchDBSource extends DataSource {
 
 /**
  * Creates an error string from the errors array
- * 
+ *
  * @param array $errors The errors array
- * 
+ *
  * @return string The error message
  * @access protected
  */
@@ -380,9 +380,9 @@ class CouchDBSource extends DataSource {
 
 /**
  * Checks if there was an error during the request
- * 
+ *
  * @param array $errors The errors array
- * 
+ *
  * @return boolean
  * @access protected
  */
@@ -397,10 +397,10 @@ class CouchDBSource extends DataSource {
 
 /**
  * Gets the queries log
- * 
+ *
  * @param boolean $sorted Should the log entries be sorted
  * @param boolean $clear Should the log be cleared after fetching
- * 
+ *
  * @return array The log result Array
  * @access public
  */
@@ -420,12 +420,12 @@ class CouchDBSource extends DataSource {
 
 /**
  * Gets the escaped DB string
- * 
+ *
  * @param string $modelDB [optional] The db to use, defaults to the configured database
- * 
+ *
  * @return string The escaped db name
  * @access public
- * 
+ *
  * @see http://wiki.apache.org/couchdb/HTTP_database_API
  */
 	public function getDB($modelDB = null) {
@@ -493,6 +493,11 @@ class CouchDBSource extends DataSource {
 
 		if (isset($queryData['view']) && isset($queryData['design'])) {
 			$url .= '/_design/' . $queryData['design'] . '/_view/' . $queryData['view'];
+			if (isset($queryData['params']) && is_array($queryData['params'])) {
+				foreach ($queryData['params'] as $parameter => $value) {
+					$params[$parameter] = json_encode($value);
+				}
+			}
 		} elseif(isset($queryData['conditions'][$model->alias . '.' . $model->primaryKey])) {
 			$url .= $queryData['conditions'][$model->alias . '.' . $model->primaryKey];
 		} else {
@@ -507,7 +512,7 @@ class CouchDBSource extends DataSource {
           			// FIXME: ? increase skip value for real pagination with page jumping? page * 10 e.g.?
 				}
 			}
-		}	
+		}
 
 		if ($queryData['fields'] == 'count') {
 			unset($queryData['params']['limit']);
@@ -641,13 +646,13 @@ class CouchDBSource extends DataSource {
 
 /**
  * Gets the revision for a couch document for Model $model
- * 
+ *
  * @param Model $model Model object
  * @param string $id the UUID
- * 
+ *
  * @return string The current revision
  * @access public
- * 
+ *
  * @see http://wiki.apache.org/couchdb/HTTP_Document_API#HEAD
  */
 	public function getRevision(Model $model, $id = false) {
