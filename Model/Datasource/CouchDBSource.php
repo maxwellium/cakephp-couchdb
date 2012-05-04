@@ -495,14 +495,6 @@ class CouchDBSource extends DataSource {
 			$url .= '_design/' . $queryData['design'] . '/_view/' . $queryData['view'];
 		} elseif(isset($queryData['conditions'][$model->alias . '.' . $model->primaryKey])) {
 			$url .= $queryData['conditions'][$model->alias . '.' . $model->primaryKey];
-
-			if ($queryData['fields'] == 'count') {
-				if (isset($queryData['params']['limit'])) {
-					unset($queryData['params']['limit']);
-				}
-			} else {
-				$params['include_docs'] = 'true';
-			}
 		} else {
 			$url .= '_all_docs';
 			if (!empty($queryData['limit'])) {
@@ -515,16 +507,15 @@ class CouchDBSource extends DataSource {
           			// FIXME: ? increase skip value for real pagination with page jumping? page * 10 e.g.?
 				}
 			}
-
-			if ($queryData['fields'] == 'count') {
-				if (isset($queryData['params']['limit'])) {
-					unset($queryData['params']['limit']);
-				}
-			} else {
-				$params['include_docs'] = 'true';
-			}
 		}
 
+		if ($queryData['fields'] == 'count') {
+			if (isset($queryData['params']['limit'])) {
+				unset($queryData['params']['limit']);
+			}
+		} else {
+			$params['include_docs'] = 'true';
+		}
 
 		if (isset($queryData['params']) && is_array($queryData['params'])) {
 			foreach ($queryData['params'] as $parameter => $value) {
@@ -549,18 +540,20 @@ class CouchDBSource extends DataSource {
 				$result[] = array($model->alias => $response['body']);
 			}
 		} else {
-			if($queryData['fields'] == 'count') {
-				// documents count is requested
+			if ($queryData['fields'] == 'count') {
+				// document count is requested
 				$result[] = array(
 					$model->alias => array(
 						'count' => count($response['body']['rows'])));
-			} else {
+			} else if ($params['include_docs'] == true) {
 				// a collection of documents is requested
 				if (isset($response['body']['rows']) && !empty($response['body']['rows'])){
 					foreach($response['body']['rows'] as $row) {
 						$result[] = array($model->alias => $row['doc']);
 					}
 				}
+			} else {
+				$result = $response['body'];
 			}
 		}
 		return $result;
