@@ -495,6 +495,14 @@ class CouchDBSource extends DataSource {
 			$url .= '_design/' . $queryData['design'] . '/_view/' . $queryData['view'];
 		} elseif(isset($queryData['conditions'][$model->alias . '.' . $model->primaryKey])) {
 			$url .= $queryData['conditions'][$model->alias . '.' . $model->primaryKey];
+
+			if ($queryData['fields'] == 'count') {
+				if (isset($queryData['params']['limit'])) {
+					unset($queryData['params']['limit']);
+				}
+			} else {
+				$params['include_docs'] = 'true';
+			}
 		} else {
 			$url .= '_all_docs';
 			if (!empty($queryData['limit'])) {
@@ -507,13 +515,16 @@ class CouchDBSource extends DataSource {
           			// FIXME: ? increase skip value for real pagination with page jumping? page * 10 e.g.?
 				}
 			}
+
+			if ($queryData['fields'] == 'count') {
+				if (isset($queryData['params']['limit'])) {
+					unset($queryData['params']['limit']);
+				}
+			} else {
+				$params['include_docs'] = 'true';
+			}
 		}
 
-		if ($queryData['fields'] == 'count') {
-			unset($queryData['params']['limit']);
-		} else {
-			$params['include_docs'] = 'true';
-		}
 
 		if (isset($queryData['params']) && is_array($queryData['params'])) {
 			foreach ($queryData['params'] as $parameter => $value) {
