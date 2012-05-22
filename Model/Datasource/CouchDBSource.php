@@ -597,6 +597,10 @@ class CouchDBSource extends DataSource {
 			}
 		}
 
+		if ($this->config['models'] !== false && !isset($data[$this->config['models']])) {
+			$data[$this->config['models']] = strtolower($model->name);
+		}
+
 		$response = $this->query($url, 'put', array(), $data);
 
 		if (!isset($response['body']['ok']) || $response['body']['ok'] !== true) {
@@ -604,7 +608,7 @@ class CouchDBSource extends DataSource {
 			return false;
 		}
 
-		if (($this->config['models'] !== false) && !isset($data[$this->config['models']])) {
+		if (($this->config['models'] !== false) && isset($data[$this->config['models']])) {
 			unset($data[$this->config['models']]);
 		}
 
