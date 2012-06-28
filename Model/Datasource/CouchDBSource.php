@@ -136,6 +136,9 @@ class CouchDBSource extends DataSource {
 					case 'oauth':
 						$this->connected = false;
 						break;
+					case 'none':
+						$this->connected = true;
+						break;
 					case 'basic':
 					default:
 						$this->connected = $this->_basicAuth();
