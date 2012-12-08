@@ -516,8 +516,6 @@ class CouchDBSource extends DataSource {
 			if (isset($queryData['params']['limit'])) {
 				unset($queryData['params']['limit']);
 			}
-		} else {
-			$params['include_docs'] = 'true';
 		}
 
 		if (isset($queryData['params']) && is_array($queryData['params'])) {
