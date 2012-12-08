@@ -548,7 +548,7 @@ class CouchDBSource extends DataSource {
 						'count' => $response['body']['total_rows']
 					)
 				);
-			} else if ($params['include_docs'] == 'true') {
+			} else if ( isset($params['include_docs']) && ($params['include_docs'] == 'true') ) {
 				// a collection of documents is requested
 				if (isset($response['body']['rows']) && !empty($response['body']['rows'])){
 					foreach($response['body']['rows'] as $row) {
